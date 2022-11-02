@@ -27,7 +27,8 @@ BWA_REF= # index for bwa
 threads="" # number of threads
 fastp_threads="" # number of threads for fastp (up to 16)
 add_threads="${threads}"-1
-WORK_PATH=~/main/results # working directory
+WORK_PATH= # working directory
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
 
 
 # Singularity
@@ -59,11 +60,29 @@ do
     # log
     LOG_OUT=${PROJECT_PATH}/log/${date}_stdout.log
     LOG_ERR=${PROJECT_PATH}/log/${date}_stderr.log
+    LOG_VER=${PROJECT_PATH}/log/${date}_version.log
     
     exec 1> >(tee -a "${LOG_OUT}")
     exec 2>>"${LOG_ERR}"
     
     echo "${fname}"
+    
+    
+    # version
+    prefetch --version > "${LOG_VER}"
+    fasterq-dump --version >> "${LOG_VER}"
+    pigz --version >> "${LOG_VER}"
+    fastqc --version >> "${LOG_VER}"
+    fastp --version >> "${LOG_VER}"
+    bwa-mem2 version >> "${LOG_VER}"
+    samtools --version >> "${LOG_VER}"
+    gatk --version >> "${LOG_VER}"
+    bgzip --version >> "${LOG_VER}"
+    bcftools --version >> "${LOG_VER}"
+    
+    
+    #script
+    cp "${SCRIPT_DIR}" ${PROJECT_PATH}/log/.
     
     
     # get SRA
