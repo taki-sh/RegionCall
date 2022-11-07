@@ -28,7 +28,8 @@ threads="" # number of threads
 fastp_threads="" # number of threads for fastp (up to 6)
 samtools_threads=1+""# number of threads for fastp (up to 10)
 memory_per_thread=""# for samtools sort
-java_mem=""# for gatk
+markdup_mem=""# for gatk MarkDuplicatesSpark
+bqsr_mem=""#for gatk BaseRecalibrator
 WORK_PATH= # working directory
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 
@@ -186,8 +187,8 @@ do
     gatk \
     --java-options \
     "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
-    -Xms"${java_mem}" \
-    -Xmx"${java_mem}"" \
+    -Xms"${markdup_mem}" \
+    -Xmx"${markdup_mem}"" \
     MarkDuplicatesSpark \
     -I "${fname}"_"${target_name}"_"${date}".bam \
     -O "${fname}"_"${target_name}"_"${date}"_markdup.bam \
@@ -276,7 +277,13 @@ do
     cd "${PROJECT_PATH}"/bam || exit
     
     echo "gatk BaseRecalibrator"
-    gatk BaseRecalibrator \
+    gatk \
+    --java-options \
+    "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
+    -Xms"${bqsr_mem}" \
+    -Xmx"${bqsr_mem}" \
+    -XX:ParallelGCThreads=2" \
+    BaseRecalibrator \
     -R "${REF}" \
     -I "${fname}"_"${target_name}"_"${date}"_markdup.bam \
     --known-sites "${PROJECT_PATH}"/bqsr/"${fname}"_"${target_name}"_"${date}"_snps_bqsr.vcf \
