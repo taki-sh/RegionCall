@@ -28,6 +28,7 @@ threads="" # number of threads
 fastp_threads="" # number of threads for fastp (up to 6)
 samtools_threads=1+""# number of threads for fastp (up to 10)
 memory_per_thread=""# for samtools sort
+java_mem=""# for gatk
 WORK_PATH= # working directory
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 
@@ -181,11 +182,16 @@ do
     
     
     # duplication markup
-    echo "gatk MarkDuplicates"
-    gatk MarkDuplicates \
+    echo "gatk MarkDuplicatesSpark"
+    gatk \
+    --java-options \
+    "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
+    -Xms"${java_mem}" \
+    -Xmx"${java_mem}"" \
+    MarkDuplicatesSpark \
     -I "${fname}"_"${target_name}"_"${date}".bam \
     -O "${fname}"_"${target_name}"_"${date}"_markdup.bam \
-    -M "${fname}"_"${target_name}"_"${date}"_markdup_metrics.txt
+    --spark-runner LOCAL
     
     
     echo "samtools index"
