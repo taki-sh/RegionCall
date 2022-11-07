@@ -280,8 +280,8 @@ do
     gatk \
     --java-options \
     "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
-    -Xms"${bqsr_mem}" \
-    -Xmx"${bqsr_mem}" \
+    -Xms4G \
+    -Xmx4G \
     -XX:ParallelGCThreads=2" \
     BaseRecalibrator \
     -R "${REF}" \
@@ -291,7 +291,13 @@ do
     -O "${fname}"_"${target_name}"_"${date}"_recal_data.table
     
     echo "gatk ApplyBQSR"
-    gatk ApplyBQSR \
+    gatk \
+    --java-options \
+    "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
+    -Xms2G \
+    -Xmx2G \
+    -XX:ParallelGCThreads=2" \
+    ApplyBQSR \
     -R "${REF}" \
     -I "${fname}"_"${target_name}"_"${date}"_markdup.bam \
     -bqsr "${fname}"_"${target_name}"_"${date}"_recal_data.table \
