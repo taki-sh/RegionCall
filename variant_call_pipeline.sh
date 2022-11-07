@@ -62,6 +62,7 @@ do
     LOG_OUT=${PROJECT_PATH}/log/${date}_stdout.log
     LOG_ERR=${PROJECT_PATH}/log/${date}_stderr.log
     LOG_VER=${PROJECT_PATH}/log/${date}_version.log
+    LOG_STAT=${PROJECT_PATH}/log/${date}_flagstat.log
     
     exec 1> >(tee -a "${LOG_OUT}")
     exec 2>>"${LOG_ERR}"
@@ -151,7 +152,8 @@ do
     (
         echo "samtools flagstat"
         samtools flagstat \
-        "${WORK_PATH}"/"${fname}"/bam_ref/"${fname}"_"${date}".bam
+        "${WORK_PATH}"/"${fname}"/bam_ref/"${fname}"_"${date}".bam \
+        >"${LOG_STAT}"
     )&
     flagstat=$!
     
