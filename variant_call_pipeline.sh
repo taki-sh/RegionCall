@@ -26,7 +26,8 @@ REF= # reference
 BWA_REF= # index for bwa
 threads="" # number of threads
 fastp_threads="" # number of threads for fastp (up to 6)
-add_threads="${threads}"-1
+samtools_threads=1+""# number of threads for fastp (up to 10)
+memory_per_thread=""# for samtools sort
 WORK_PATH= # working directory
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 
@@ -52,7 +53,7 @@ do
     date=$(date "+%Y%m%d%H%M")
     
     # preparation
-    mkdir -p "${WORK_PATH}"/"${fname}"/{"${target_name}",bam_ref,fastq,cleaned_fastq}
+    mkdir -p "${WORK_PATH}"/"${fname}"/{"${target_name}",bam_ref,fastq,cleaned_fastq,lscratch}
     mkdir "${WORK_PATH}"/"${fname}"/"${target_name}"/log
     PROJECT_PATH="${WORK_PATH}"/"${fname}"/"${target_name}"
     
@@ -139,7 +140,9 @@ do
     "${fname}"_cleaned_1_"${date}".fastq.gz \
     "${fname}"_cleaned_2_"${date}".fastq.gz | \
     samtools sort \
-    -@ "${add_threads}" \
+    -T "${WORK_PATH}"/"${fname}"/lscratch
+    -m "${memory_per_thread}"
+    -@ "${samtools_threads}" \
     -O BAM \
     -o "${WORK_PATH}"/"${fname}"/bam_ref/"${fname}"_"${date}".bam
     
