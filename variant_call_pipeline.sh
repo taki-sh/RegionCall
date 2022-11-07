@@ -203,8 +203,13 @@ do
     
     # haplotype call
     echo "gatk HaplotypeCaller"
-    gatk HaplotypeCaller \
-    --native-pair-hmm-threads "${threads}" \
+    gatk \
+    --java-options \
+    "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
+    -Xms20G \
+    -Xmx20G \
+    -XX:ParallelGCThreads=2" \
+    HaplotypeCaller \
     -R "${REF}" \
     -I "${fname}"_"${target_name}"_"${date}"_markdup.bam \
     -O "${PROJECT_PATH}"/bqsr/"${fname}"_"${target_name}"_"${date}".vcf
@@ -308,7 +313,13 @@ do
     cd "${PROJECT_PATH}"/bam || exit
     
     echo "gatk HaplotypeCaller"
-    gatk HaplotypeCaller \
+    gatk \
+    --java-options \
+    "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
+    -Xms20G \
+    -Xmx20G \
+    -XX:ParallelGCThreads=2" \
+    HaplotypeCaller \
     --native-pair-hmm-threads "${threads}" \
     -R "${REF}" \
     -I "${fname}"_"${target_name}"_"${date}"_bqsr.bam \
@@ -317,7 +328,13 @@ do
     
     #check BQSR
     echo "gatk BaseRecalibrator"
-    gatk BaseRecalibrator \
+    gatk \
+    --java-options \
+    "-Djava.io.tmpdir="${WORK_PATH}"/"${fname}"/lscratch \
+    -Xms4G \
+    -Xmx4G \
+    -XX:ParallelGCThreads=2" \
+    BaseRecalibrator \
     -R "${REF}" \
     -I "${fname}"_"${target_name}"_"${date}"_bqsr.bam \
     --known-sites "${PROJECT_PATH}"/bqsr/"${fname}"_"${target_name}"_"${date}"_snps_bqsr.vcf \
