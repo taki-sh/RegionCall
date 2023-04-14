@@ -1,4 +1,5 @@
-# RegionCall single-region variant calling pipeline for creating consensus sequence
+# RegionCall
+single-region variant calling pipeline for creating consensus sequence
 ## はじめに
 ショートリードデータの取得からマッピング、バリアントコール、目的遺伝子配列の単離までを行うパイプラインです。
 - スクリプトはNikaidoLab_NAS/共有データ/Bioinformatics/Variant_callにあります。
