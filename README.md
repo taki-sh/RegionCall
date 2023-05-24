@@ -10,6 +10,7 @@ This is a pipeline that automates the process from downloading WGS data, mapping
 - samtools (verified with 1.15)
 - bcftools (verified with 1.15)
 - gatk (verified with 4.3.0.0)
+- genozip (verified with 14.0.34)
 
 ## Usage
 ### Running locally
@@ -90,6 +91,7 @@ WGSデータの取得からマッピング、バリアントコール、目的�
 - samtools (1.15で動作確認)
 - bcftools (1.15で動作確認)
 - gatk (4.3.0.0で動作確認)
+- genozip (14.0.34で動作確認)
 
 ## 使い方
 ### ローカルで実行する場合
