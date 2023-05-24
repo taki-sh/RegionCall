@@ -156,6 +156,6 @@ $ bash RegionCall_local.sh RegionCall_input.txt
 $ qsub_beta RegionCall_DDBJ.sh
 ```
 
-## らいせんす
+## ライセンス
 MIT
 
