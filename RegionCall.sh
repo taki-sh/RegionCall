@@ -1,6 +1,18 @@
 #! /bin/bash
 #$ -S /bin/bash
 #$ -cwd
+#$ -o /dev/null
+#$ -e /dev/null
+#$ -N RC_p_LMV
+#$ -V
+#$ -l d_rt=72:00:00
+#$ -l s_rt=72:00:00
+#$ -pe def_slot 16
+#$ -l s_vmem=24G
+#$ -l mem_req=24G
+#$ -t 1-383:1
+#$ -tc 3
+
 
 set -e
 set -u
@@ -9,29 +21,35 @@ set -o pipefail
 export MALLOC_ARENA_MAX=2
 
 
-# 解析するSRA登録番号
-SAMPLE_LIST=()
+# List of SRA accession numbers to be analyzed
+SAMPLE_LIST=(
+)
 
 
-# TARGET_NAMEとTARGET_REGIONのリストを定義する
+# Select the sample for analysis based on the SGE_TASK_ID
+SAMPLE="${SAMPLE_LIST[$((--SGE_TASK_ID))]}"
+
+
+# Define lists of target names and regions
 TARGET_NAME_LIST=()
-TARGET_REGION_LIST=()
+TARGET_REGION_LIST=(
+)
 
 
-# TARGET_NAMEとTARGET_REGIONの長さが等しくない場合、エラーメッセージを出力して終了する
+# If the length of TARGET_NAME and TARGET_REGION is not equal, output an error message and exit.
 if [ ${#TARGET_NAME_LIST[@]} -ne ${#TARGET_REGION_LIST[@]} ]; then
     echo "Error: TARGET_NAME and TARGET_REGION must have the same length." | tee -a "${LOG_OUT}"
     exit 1
 fi
 
 
-# その他必要な入力情報
-REF="" # リファレンスのパス
-BWA_REF="" # マッピング用インデックスのパス
-WORK_DIR="" # 作業ディレクトリパス
+# Other required input information
+REF="where/to/path" # # Path to reference
+BWA_REF="where/to/path" # Path to mapping index
+WORK_DIR="where/to/path" # Path to working directory
 
 
-# 各ツールスレッド数・メモリ数
+# Number of threads and memory for each tool
 fasterq_threads="16"
 pigz_threads="16"
 fastp_threads="6" # ~6 threads
@@ -41,7 +59,7 @@ sort_threads="12" # ~12 threads
 index_threads="16"
 genozip_threads="16"
 
-# 並列処理用
+# For parallel processing
 view_threads="4"
 markdup_mem="2G" # ~60G
 markdup_core="4" # ~16 cores
@@ -57,33 +75,33 @@ bqsr_threads="2" # ~2 threads
 ################################################################################################################
 
 
-# 実行スクリプトのパスを取得
+# Get the path of the script
 SCRIPT=$(basename "$0")
 SCRIPT_PATH=$(cd "$(dirname "$0")"; pwd)/"${SCRIPT}"
 
 
-# パイプライン
-# 開始時間を取得
+# Pipeline
+# Get the start time
 START_TIME=$(date "+%Y-%m-%d %H:%M:%S")
 DATE=$(date "+%Y%m%d%H%M")
 
 
-# 必要なディレクトリを作成
+# Create necessary directories
 SAMPLE_DIR="${WORK_DIR}"/"${SAMPLE}"
-mkdir -p "${SAMPLE_DIR}"/{fastq,bam,log}
+mkdir -p "${SAMPLE_DIR}"/{fastq,bam,log,lscratch}
 
 
-# ログ
+# Logging
 LOG_OUT="${SAMPLE_DIR}"/log/"${DATE}"_stdout.log
 LOG_ERR="${SAMPLE_DIR}"/log/"${DATE}"_stderr.log
 LOG_VER="${SAMPLE_DIR}"/log/"${DATE}"_version.log
 
-#共通の処理
+#Common processing
 {
     echo "${SAMPLE}" | tee -a "${LOG_OUT}"
     
     
-    # 使用するツールのバージョンを取得
+    # Get the version of the tools used
     {
         prefetch --version;
         fasterq-dump --version;
@@ -97,11 +115,11 @@ LOG_VER="${SAMPLE_DIR}"/log/"${DATE}"_version.log
     } > "${LOG_VER}"
     
     
-    #実行スクリプトを取得
+    # Copy the script
     cp "${SCRIPT_PATH}" "${SAMPLE_DIR}"/log/.
     
     
-    # ショートリードデータ取得
+    # Get short read data
     cd "${SAMPLE_DIR}"/fastq || exit
     
     echo "prefetch" | tee -a "${LOG_OUT}"
@@ -128,7 +146,7 @@ LOG_VER="${SAMPLE_DIR}"/log/"${DATE}"_version.log
     echo "pigz DONE!" | tee -a "${LOG_OUT}"
     
     
-    #クオリティチェック・トリミング
+    # Quality check and trimming
     cd "${SAMPLE_DIR}"/fastq || exit
     
     echo "fastp" | tee -a "${LOG_OUT}"
@@ -141,7 +159,7 @@ LOG_VER="${SAMPLE_DIR}"/log/"${DATE}"_version.log
     echo "fastp DONE!" | tee -a "${LOG_OUT}"
     
     
-    # マッピング
+    # Mapping
     cd "${SAMPLE_DIR}"/fastq || exit
     
     echo "bwa-mem2 | samtools sort" | tee -a "${LOG_OUT}"
@@ -162,7 +180,7 @@ LOG_VER="${SAMPLE_DIR}"/log/"${DATE}"_version.log
     echo "bwa-mem2 | samtools sort DONE!" | tee -a "${LOG_OUT}"
     
     
-    # マッピング結果を取得
+    # Get mapping results
     (
         cd "${SAMPLE_DIR}"/bam || exit
         
@@ -195,10 +213,11 @@ LOG_VER="${SAMPLE_DIR}"/log/"${DATE}"_version.log
     
     rm ./*.fastq.gz
     rm -rf "${SAMPLE}"
+    rm -rf "${SAMPLE_DIR}"/lscratch
 } 2>>"${LOG_ERR}"
 
 
-# 独立に処理する関数を定義する
+# Define a function to be processed independently.
 function process_target {
     local TARGET_NAME=$1
     local TARGET_REGION=$2
@@ -210,9 +229,8 @@ function process_target {
     TARGET_LOG_ERR="${TARGET_DIR}/log/${DATE}_${TARGET_NAME}_stderr.log"
     
     
-    # ここに、各組み合わせに行いたい処理を書く
     {
-        # view target
+        # Extract the necessary regions from the bam file
         cd "${SAMPLE_DIR}"/bam || exit
         
         samtools view \
@@ -224,7 +242,7 @@ function process_target {
         "${TARGET_REGION}" \
         
         
-        # 重複リード検出
+        # Duplicate read detection
         cd "${TARGET_DIR}"/bqsr || exit
         
         gatk \
@@ -244,7 +262,7 @@ function process_target {
         "${SAMPLE}"_"${TARGET_NAME}"_"${DATE}"_markdup.bam
         
         
-        # バリアントコール1回目
+        # First round of variant calling
         cd "${TARGET_DIR}"/bqsr || exit
         
         gatk \
@@ -260,7 +278,7 @@ function process_target {
         --verbosity ERROR
         
         
-        #検出されたSNPのフィルタリング
+        # Filtering of detected SNPs
         (
             cd "${TARGET_DIR}"/bqsr || exit
             
@@ -295,7 +313,7 @@ function process_target {
         slect_SNPs=$!
         
         
-        #検出されたINDELのフィルタリング
+        # Filtering of detected INDELs
         cd "${TARGET_DIR}"/bqsr || exit
         
         gatk SelectVariants \
@@ -357,7 +375,7 @@ function process_target {
         --verbosity ERROR
         
         
-        #バリアントコール2回目
+        # Second round of variant calling
         cd "${TARGET_DIR}"/bqsr || exit
         
         gatk \
@@ -373,7 +391,7 @@ function process_target {
         --verbosity ERROR
         
         
-        #BQSR結果確認
+        # Checking BQSR results
         (
             cd "${TARGET_DIR}"/bqsr || exit
             
@@ -395,7 +413,7 @@ function process_target {
         check_BQSR=$!
         
         
-        #検出されたSNPのフィルタリング
+        # Filtering of detected SNPs
         (
             cd "${TARGET_DIR}"/vcf || exit
             
@@ -423,7 +441,7 @@ function process_target {
         slect_SNPs_2=$!
         
         
-        #検出されたINDELのフィルタリング
+        # Filtering of detected INDELs
         cd "${TARGET_DIR}"/vcf || exit
         
         gatk SelectVariants \
@@ -447,7 +465,7 @@ function process_target {
         wait ${slect_SNPs_2}
         
         
-        # 最終的なバリアント情報のマージ
+        # Merging final variant information
         cd "${TARGET_DIR}"/vcf || exit
         
         bgzip -c \
@@ -469,7 +487,7 @@ function process_target {
         "${SAMPLE}"_"${TARGET_NAME}"_"${DATE}"_INDELs_filtered.vcf.gz
         
         
-        # make fasta
+        # Creation of consensus sequence
         cd "${TARGET_DIR}"/results || exit
         
         
@@ -495,7 +513,7 @@ function process_target {
 }
 
 
-# TARGET_NAMEとTARGET_REGIONのリストをセットにして、各組み合わせに独立に処理をする
+# Set TARGET_NAME and TARGET_REGION lists as a pair, and perform independent operations on each combination
 for (( i=0; i<${#TARGET_NAME_LIST[@]}; i++ )); do
     name=${TARGET_NAME_LIST[$i]}
     region=${TARGET_REGION_LIST[$i]}
@@ -503,7 +521,7 @@ for (( i=0; i<${#TARGET_NAME_LIST[@]}; i++ )); do
 done
 
 
-# 処理待ち
+# Waiting for processing
 sleep 1
 echo "Started all processes in the background." | tee -a "${LOG_OUT}"
 echo "Waiting for all processes to finish..." | tee -a "${LOG_OUT}"
@@ -524,7 +542,7 @@ rm "${SAMPLE}"_"${DATE}".bam.bai
 
 echo "Compression of BAM files completed."| tee -a "${LOG_OUT}"
 
-# 終了時間の取得
+# Get the end time
 END_TIME=$(date "+%Y-%m-%d %H:%M:%S")
 echo "$START_TIME" | tee -a "${LOG_OUT}"
 echo "$END_TIME" | tee -a "${LOG_OUT}"
