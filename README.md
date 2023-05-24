@@ -1,6 +1,6 @@
 EN
 # RegionCall
-This is a pipeline that automates the process from downloading WGS data, mapping, variant calling, to extraction of target region sequences.
+A pipeline that automates the process from downloading WGS data, mapping, variant calling, to extraction of target region sequences.
 
 ## Requirements
 - SRA Toolkit (verified with 2.11.0)
@@ -81,7 +81,7 @@ MIT
 
 JN
 
-WGSデータの取得からマッピング、バリアントコール、目的領域配列の抽出までを自動で行うパイプラインです。
+WGSデータの取得からマッピング、バリアントコール、目的領域配列の抽出までを自動で行うパイプライン
 
 ## 必要なもの
 - SRA Toolkit (2.11.0で動作確認)
