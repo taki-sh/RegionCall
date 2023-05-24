@@ -1,17 +1,6 @@
 #! /bin/bash
 #$ -S /bin/bash
 #$ -cwd
-#$ -o /dev/null
-#$ -e /dev/null
-#$ -N RC_p_LMV
-#$ -V
-#$ -l d_rt=72:00:00
-#$ -l s_rt=72:00:00
-#$ -pe def_slot 16
-#$ -l s_vmem=24G
-#$ -l mem_req=24G
-#$ -t 1-383:1
-#$ -tc 3
 
 
 set -e
