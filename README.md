@@ -1,7 +1,9 @@
 EN
 # RegionCall
 A pipeline that automates the process from downloading WGS data, mapping, variant calling, to extraction of target region sequences.
+
 *Updated to support multiple regions.(RegionCall_DDBJ_parallel.sh)
+
 ## Requirements
 - SRA Toolkit (verified with 2.11.0)
 - pigz (verified with 2.3.4)
